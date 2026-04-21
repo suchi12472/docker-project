@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Calculator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 30px;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+
+    .calculator {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 24px;
+      width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    h2 { color: #e2e2e2; text-align: center; margin-bottom: 20px; font-size: 1.2rem; }
+
+    .display {
+      background: #0f3460;
+      border-radius: 10px;
+      padding: 16px;
+      text-align: right;
+      margin-bottom: 16px;
+    }
+    .display .expression { color: #a0a0c0; font-size: 0.85rem; min-height: 20px; }
+    .display .result { color: #e2e2e2; font-size: 2rem; font-weight: bold; word-break: break-all; }
+
+    .buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+
+    button {
+      padding: 18px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+    }
+    button:active { transform: scale(0.95); }
+
+    .btn-num   { background: #1a1a3e; color: #e2e2e2; }
+    .btn-op    { background: #e94560; color: white; }
+    .btn-eq    { background: #0f3460; color: white; grid-column: span 2; }
+    .btn-clear { background: #533483; color: white; grid-column: span 2; }
+    button:hover { opacity: 0.85; }
+
+    .history-panel {
+      background: #16213e;
+      border-radius: 16px;
+      padding: 24px;
+      width: 300px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      max-height: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+    .history-panel h2 { color: #e2e2e2; margin-bottom: 16px; font-size: 1.2rem; }
+    .history-list { overflow-y: auto; flex: 1; }
+    .history-item {
+      background: #0f3460;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      color: #e2e2e2;
+      font-size: 0.9rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .history-item .expr { color: #a0a0c0; }
+    .history-item .res  { color: #e94560; font-weight: bold; }
+    .empty { color: #666; text-align: center; margin-top: 20px; }
+    .refresh-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      background: #533483;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Calculator -->
+  <div class="calculator">
+    <h2>🧮 Calculator</h2>
+    <div class="display">
+      <div class="expression" id="expression"></div>
+      <div class="result" id="result">0</div>
+    </div>
+    <div class="buttons">
+      <button class="btn-clear" onclick="clearAll()">AC</button>
+      <button class="btn-op" onclick="deleteLast()">⌫</button>
+      <button class="btn-op" onclick="appendOp('/')">÷</button>
+
+      <button class="btn-num" onclick="appendNum('7')">7</button>
+      <button class="btn-num" onclick="appendNum('8')">8</button>
+      <button class="btn-num" onclick="appendNum('9')">9</button>
+      <button class="btn-op" onclick="appendOp('*')">×</button>
+
+      <button class="btn-num" onclick="appendNum('4')">4</button>
+      <button class="btn-num" onclick="appendNum('5')">5</button>
+      <button class="btn-num" onclick="appendNum('6')">6</button>
+      <button class="btn-op" onclick="appendOp('-')">−</button>
+
+      <button class="btn-num" onclick="appendNum('1')">1</button>
+      <button class="btn-num" onclick="appendNum('2')">2</button>
+      <button class="btn-num" onclick="appendNum('3')">3</button>
+      <button class="btn-op" onclick="appendOp('+')">+</button>
+
+      <button class="btn-num" onclick="appendNum('0')">0</button>
+      <button class="btn-num" onclick="appendDot()">.</button>
+      <button class="btn-eq" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-panel">
+    <h2>📋 History</h2>
+    <div class="history-list" id="historyList">
+      <div class="empty">No history yet</div>
+    </div>
+    <button class="refresh-btn" onclick="loadHistory()">🔄 Refresh History</button>
+  </div>
+
+  <script>
+    const BACKEND = 'http://localhost:5000';
+    let current = '';
+
+    function appendNum(n) {
+      current += n;
+      document.getElementById('result').innerText = current;
+    }
+
+    function appendOp(op) {
+      if (current === '') return;
+      current += op;
+      document.getElementById('result').innerText = current;
+    }
+
+    function appendDot() {
+      const parts = current.split(/[\+\-\*\/]/);
+      if (!parts[parts.length - 1].includes('.')) {
+        current += '.';
+        document.getElementById('result').innerText = current;
+      }
+    }
+
+    function clearAll() {
+      current = '';
+      document.getElementById('result').innerText = '0';
+      document.getElementById('expression').innerText = '';
+    }
+
+    function deleteLast() {
+      current = current.slice(0, -1);
+      document.getElementById('result').innerText = current || '0';
+    }
+
+    async function calculate() {
+      if (!current) return;
+      document.getElementById('expression').innerText = current + ' =';
+
+      try {
+        const res = await fetch(`${BACKEND}/calculate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expression: current })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          document.getElementById('result').innerText = 'Error';
+        } else {
+          document.getElementById('result').innerText = data.result;
+          current = String(data.result);
+          loadHistory();
+        }
+      } catch (e) {
+        document.getElementById('result').innerText = 'Server Error';
+      }
+    }
+
+    async function loadHistory() {
+      try {
+        const res = await fetch(`${BACKEND}/history`);
+        const data = await res.json();
+        const list = document.getElementById('historyList');
+
+        if (!data.length) {
+          list.innerHTML = '<div class="empty">No history yet</div>';
+          return;
+        }
+
+        list.innerHTML = data.map(item => `
+          <div class="history-item">
+            <span class="expr">${item.expression} =</span>
+            <span class="res">${item.result}</span>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Failed to load history');
+      }
+    }
+
+    loadHistory();
+  </script>
+
+</body>
+</html>
