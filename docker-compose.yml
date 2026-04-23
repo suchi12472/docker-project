@@ -1,0 +1,49 @@
+services:
+  database:
+    image: mysql:8.0
+    container_name: database
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpass
+      - MYSQL_USER=calcuser
+      - MYSQL_PASSWORD=calcpass
+      - MYSQL_DATABASE=calculatordb
+    volumes:
+      - db-database:/var/lib/mysql
+    networks:
+      - backend-network
+    ports:
+      - "3306:3306"
+
+  backend:
+    build: ./backend
+    container_name: backend
+    environment:
+      - DB_HOST=database
+      - DB_USER=calcuser
+      - DB_PASSWORD=calcpass
+      - DB_NAME=calculatordb
+    networks:
+      - backend-network
+      - frontend-network
+    depends_on:
+      - database
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    networks:
+      - frontend-network
+    ports:
+      - "9090:80"
+    depends_on:
+      - backend
+
+volumes:
+  db-database:
+networks:
+  backend-network:
+    driver: bridge
+  frontend-network:
+    driver: bridge

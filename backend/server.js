@@ -7,18 +7,21 @@ app.use(cors());
 app.use(express.json());
 
 // ── MySQL Connection ──────────────────────────────────────
-const db = mysql.createConnection({
-  host:     process.env.DB_HOST     || 'database',
-  user:     process.env.DB_USER     || 'calcuser',
-  password: process.env.DB_PASSWORD || 'calcpass',
-  database: process.env.DB_NAME     || 'calculatordb'
-});
+let db;
 
 function connectWithRetry() {
+  db = mysql.createConnection({
+    host:     process.env.DB_HOST     || 'database',
+    user:     process.env.DB_USER     || 'calcuser',
+    password: process.env.DB_PASSWORD || 'calcpass',
+    database: process.env.DB_NAME     || 'calculatordb'
+  });
+
   db.connect((err) => {
     if (err) {
       console.log('DB not ready, retrying in 3s...', err.message);
-      setTimeout(connectWithRetry, 3000);
+      db.destroy();                        // destroy broken connection
+      setTimeout(connectWithRetry, 3000);  // create fresh connection
     } else {
       console.log('Connected to MySQL!');
       createTable();
